@@ -1,0 +1,108 @@
+{
+  "messages": [
+    {
+      "role": "user",
+      "content": "name of the mens in this book",
+      "timestamp": "2026-02-11T12:14:15.389768"
+    },
+    {
+      "role": "assistant",
+      "content": "Not found in the uploaded documents.\n\n**Sources:**\n1. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 209)\n2. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 211)\n3. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 49)\n",
+      "timestamp": "2026-02-11T12:14:42.835529",
+      "sources": [
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 209
+        },
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 211
+        },
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 49
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "summary of 61,62 pages",
+      "timestamp": "2026-02-11T12:15:10.463906"
+    },
+    {
+      "role": "assistant",
+      "content": "The document does not contain detailed content for pages 61-62. However, based on the provided context up to page 211, I can summarize the general structure and themes of the book as described in those sections:\n\nPages 17 through 211 describe the core lessons in \"Rich Dad Poor Dad\" by Robert T. Kiyosaki, focusing on six main lessons intended to help readers grow wealthier no matter what changes occur in a changing world. \n\nOn page 10, it mentions that there are additional 'To Do's' at the end of Chapter Nine, suggesting practical actions derived from these core lessons.\n\nPages 211 onwards introduce the idea of becoming financially free by building \"pipelines for cash\" to flow into one's pockets, emphasizing financial liberation and providing a roadmap divided into three parts. The first part focuses on identifying quadrants and personal change in the second part, indicating a journey towards wealth development through understanding and changing perspectives and behaviors.\n\n**Sources:**\n1. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 17)\n2. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 10)\n3. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 211)\n",
+      "timestamp": "2026-02-11T12:15:33.213366",
+      "sources": [
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 17
+        },
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 10
+        },
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 211
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "who is the author",
+      "timestamp": "2026-02-11T12:16:18.168617"
+    },
+    {
+      "role": "assistant",
+      "content": "The author mentioned in the context provided is Robert T. Kiyosaki.\n\n**Sources:**\n1. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 116)\n2. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 117)\n3. Rich Dad Poor Dad by Robert T. Kiyosaki.pdf (Page 177)\n",
+      "timestamp": "2026-02-11T12:16:35.176887",
+      "sources": [
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 116
+        },
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 117
+        },
+        {
+          "file": "Rich Dad Poor Dad by Robert T. Kiyosaki.pdf",
+          "page": 177
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "name of the college",
+      "timestamp": "2026-02-11T12:17:45.351845"
+    },
+    {
+      "role": "assistant",
+      "content": "VIGNANA JYOTHI INSTITUTE OF ENGINEERING AND TECHNOLOGY\n\n**Sources:**\n1. Abstract-13.pdf (Page 1)\n",
+      "timestamp": "2026-02-11T12:18:04.807157",
+      "sources": [
+        {
+          "file": "Abstract-13.pdf",
+          "page": 1
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": "all the person names in this",
+      "timestamp": "2026-02-11T12:19:14.285220"
+    },
+    {
+      "role": "assistant",
+      "content": "Here are all the person names found in the provided context:\n\n1. Mr. Manmath Nath Das\n2. G. Navya Sai\n3. G. Rishith Reddy\n4. G. Meghana\n5. P. Bhavishwa Reddy\n\n**Sources:**\n1. Abstract-13.pdf (Page 1)\n",
+      "timestamp": "2026-02-11T12:19:32.903822",
+      "sources": [
+        {
+          "file": "Abstract-13.pdf",
+          "page": 1
+        }
+      ]
+    }
+  ]
+}

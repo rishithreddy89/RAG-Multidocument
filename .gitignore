@@ -1,0 +1,30 @@
+# Python virtual environment
+venv/
+env/
+*.pyc
+__pycache__/
+*.so
+*.egg-info/
+dist/
+build/
+
+# Data and uploads
+backend/data/documents/*
+!backend/data/documents/.gitkeep
+
+# Environment variables
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
