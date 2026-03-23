@@ -83,10 +83,10 @@ async def chat(request: ChatRequest):
     chat_service.add_message("user", request.message)
     
     try:
-        # Execute RAG pipeline with document filtering (limit to 3 chunks for speed)
+        # Execute RAG pipeline with document filtering
         result = await rag_query(
             request.message, 
-            top_k=3,
+            top_k=5,
             selected_document_ids=request.selected_documents
         )
         

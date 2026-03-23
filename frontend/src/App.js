@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Brain, Layers } from 'lucide-react';
+// Removed logo icon import
 import useResizablePanels from './hooks/useResizablePanels';
 import Sidebar from './components/Sidebar';
 import ViewerPanel from './components/ViewerPanel';
@@ -153,14 +153,8 @@ function App() {
         <div className="px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="relative">
-                <div className="w-11 h-11 bg-gradient-to-br from-primary-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                  <Brain className="w-6 h-6 text-white" />
-                </div>
-                <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-400 border-2 border-white rounded-full"></div>
-              </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 bg-clip-text text-transparent">
+                <h1 className="text-xl font-bold text-gray-800">
                   Multi-Document Reasoning Engine
                 </h1>
               </div>

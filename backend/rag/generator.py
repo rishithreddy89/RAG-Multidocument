@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 # Remote LLM API Configuration
 LLM_API_URL = "https://umbellar-mechelle-supernationally.ngrok-free.dev/chat"
-TIMEOUT = 60.0  # Increased for ngrok-hosted LLM
+TIMEOUT = 120.0
 
 
 def build_rag_prompt(query: str, context: str) -> str:
@@ -25,14 +25,33 @@ def build_rag_prompt(query: str, context: str) -> str:
     Returns:
         Formatted prompt for LLM
     """
-    prompt = f"""Answer based ONLY on this context. If not found, say: "Not found in the uploaded documents."
+    prompt = f"""You are a document analysis assistant specializing in multi-document comparison.
 
-Context:
+Your job is to analyze the provided document excerpts and generate a clear and helpful response.
+
+Critical Guidelines:
+- PRESERVE ATTRIBUTION: Always maintain which information belongs to which document/person.
+- When comparing multiple documents, clearly distinguish information by document source.
+- NEVER confuse attributes or achievements between different documents/individuals.
+- Each section begins with [Document: filename] - use this to maintain proper attribution.
+- If the same fact appears in multiple documents, explicitly state which documents contain it.
+- Do not synthesize or blur information across different individuals without explicitly noting comparison.
+- If asked about a person's achievement, confirm it's from THAT specific person's resume.
+
+Formatting:
+- Provide a coherent explanation while maintaining clear source attribution.
+- When describing individual achievements or facts, explicitly reference which resume/document they come from.
+- Use phrases like "According to [Document Name]..." to maintain clarity.
+- If summarizing, describe the overall ideas while preserving individual attribution.
+- Keep the response structured and readable.
+
+Document excerpts:
 {context}
 
-Question: {query}
+User query:
+{query}
 
-Answer:"""
+Answer in a clear and concise way, maintaining attribution to the correct individuals/documents throughout."""
     
     return prompt
 

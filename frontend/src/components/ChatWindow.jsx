@@ -136,13 +136,6 @@ const ChatWindow = ({ initialMessages = [], isLoadingState = false, selectedDocu
               <h3 className="text-lg font-semibold text-gray-800 mb-2">
                 Start a Conversation
               </h3>
-              <p className="text-sm text-gray-500 mb-4">
-                Ask me anything! In Phase 2, I'll search through your documents to provide context-aware answers.
-              </p>
-              <div className="text-xs text-gray-400 space-y-1">
-                <p>💡 Try: "Explain machine learning"</p>
-                <p>💡 Try: "What are neural networks?"</p>
-              </div>
             </div>
           </div>
         ) : (
