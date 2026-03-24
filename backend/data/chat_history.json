@@ -2,73 +2,49 @@
   "messages": [
     {
       "role": "user",
-      "content": "who won map an app hackathon",
-      "timestamp": "2026-03-23T18:53:59.587080"
+      "content": "what does this image tell about",
+      "timestamp": "2026-03-24T16:48:41.783642"
     },
     {
       "role": "assistant",
-      "content": "Puli Bhavishwa Reddy won the \"Map an App\" Hackathon by developing an innovative One-Tap Blood Donation App, as mentioned in his resume_job.pdf document.\n\nGopidi Rishith Reddy did not win any hackathon as no information about a winner for that specific competition is provided in his Resume_new (4).pdf.\n\n**Sources:**\n1. resume_job.pdf (Page 1)\n2. Resume_new (4).pdf (Page 2)\n3. Resume_new (4).pdf (Page 1)\n",
-      "timestamp": "2026-03-23T18:55:47.170818",
+      "content": "[Document: WhatsApp Image 2026-03-24 at 22.18.03.jpeg] This document excerpt talks about existing methods for foreground separation in scientific research, focusing on improving readability of documents with complex color backgrounds.\n\n[Document: Intelligent Information Management, 2010, Vol. 2, No. 2, pp. 120-133] [Subject: og Scientific]\n\nThis document discusses the text extraction method developed by researchers P. Nagabhushan and S. Nirmala from the Department of Studies in Computer Science at the University of Mysore, India. It introduces a novel approach for foreground text segmentation in complex color documents that combines connected component analysis with texture feature analysis to handle various background complexities and colors.\n\nThe proposed method aims to enhance readability by identifying potential text regions using an edge detector and analyzing their textures. Non-textual regions are distinguished from the actual text areas through this process. The research concludes by stating that OCR can recognize extracted foreground text in English, demonstrating the effectiveness of their approach for improving document visibility and accessibility.\n\nThere are other sources discussing applications and challenges associated with automatic detection and extraction of foreground text from complex backgrounds, including issues related to low recognition accuracy when using unsupervised local thresholding techniques.\n\n**Sources:**\n1. WhatsApp Image 2026-03-24 at 22.18.03.jpeg (Page 1)\n",
+      "timestamp": "2026-03-24T16:49:58.182127",
       "sources": [
         {
-          "file": "resume_job.pdf",
-          "page": "1"
-        },
-        {
-          "file": "Resume_new (4).pdf",
-          "page": "2"
-        },
-        {
-          "file": "Resume_new (4).pdf",
+          "file": "WhatsApp Image 2026-03-24 at 22.18.03.jpeg",
           "page": "1"
         }
       ]
     },
     {
       "role": "user",
-      "content": "what are the similarities and differences between two resumes",
-      "timestamp": "2026-03-23T18:56:29.506277"
+      "content": "who are the authors of this",
+      "timestamp": "2026-03-24T16:50:27.325374"
     },
     {
       "role": "assistant",
-      "content": "The model took too long to generate a grounded answer. Please try a more specific question.\n\n**Sources:**\n1. resume_job.pdf (Page 1)\n2. Resume_new (4).pdf (Page 1)\n3. Resume_new (4).pdf (Page 2)\n",
-      "timestamp": "2026-03-23T18:58:29.994759",
+      "content": "The author of WhatsApp Image 2026-03-24 at 22.18.03.jpeg is Unknown.\n\n**Sources:**\n1. WhatsApp Image 2026-03-24 at 22.18.03.jpeg (Page 1)\n",
+      "timestamp": "2026-03-24T16:50:27.336196",
       "sources": [
         {
-          "file": "resume_job.pdf",
+          "file": "WhatsApp Image 2026-03-24 at 22.18.03.jpeg",
           "page": "1"
-        },
-        {
-          "file": "Resume_new (4).pdf",
-          "page": "1"
-        },
-        {
-          "file": "Resume_new (4).pdf",
-          "page": "2"
         }
       ]
     },
     {
       "role": "user",
-      "content": "what are the similarities and differences between two resumes",
-      "timestamp": "2026-03-23T18:58:53.108786"
+      "content": "person names present in this",
+      "timestamp": "2026-03-24T16:50:38.371051"
     },
     {
       "role": "assistant",
-      "content": "### Similarities:\n\n1. **Objective**: Both resumes highlight professional goals and career aspirations, particularly focused on software development roles.\n2. **Education Background**: \n    - Gopidi Rishith Reddy mentions his undergraduate studies in Artificial Intelligence and Data Science at Vallurupalli Nageswara Rao Vignana Jyothi Institute of Engineering and Technology (VNR VJIET), Hyderabad, with a GPA of 9.01.\n    - Puli Bhavishwa Reddy also studied Computer Science at VNR VJIET, Hyderabad, with a GPA of 9.0. Both have shown their strong academic foundation in engineering.\n\n### Differences:\n\n#### Education:\n- **Gopidi Rishith Reddy**: Pursuing his Bachelor's degree (B.Tech) with a CGPA of 9.01 and classes XII at Narayana Junior College with a 97.6%.\n- **Puli Bhavishwa Reddy**: Studied Bachelor of Technology in Computer Science with an expected GPA of 9.0. His education is also from VNR VJIET, but the specific year is not mentioned.\n\n#### Work Experience:\n- **Gopidi Rishith Reddy** includes experience as a Software Development Engineer Intern at VJ Startups where he developed a full-stack hostel management platform.\n- **Puli Bhavishwa Reddy** mentions internships and projects such as Web and App Developer Intern (Bandiwala) where he developed a web and mobile platform for Bandiwala, and the development of an RAG System (Multi-Document Reasoning Engine).\n\n#### Technical Skills:\n- Both resumes mention skills in languages like C++, Python, Java, and familiarity with frameworks like ReactJS, Node.js, and Express.js. \n- **Gopidi Rishith Reddy** emphasizes Google OAuth authentication for secure login systems, while **Puli Bhavishwa Reddy** focuses on Capacitor and MongoDB integration.\n  \n#### Projects:\n- **Gopidi Rishith Reddy**: Developed a hostel management system (VJ Hostels) using the MERN stack. Also worked on developing a real-time application for VNR VJIET's campus safety (VJR-KEYS).\n- **Puli Bhavishwa Reddy**: Participated in multiple projects including the development of an RAG System, and a web app for Blood Donation (Map an App).\n\n#### Achievements:\n- Both mention achievements related to competitive programming contests (CodeChef participation) but highlight different types of project contributions.\n- **Gopidi Rishith Reddy** stands out with a \"Winner\" in the \"Map an App\" Hackathon, which is not mentioned for Puli Bhavishwa Reddy.\n\n### Summary:\nBoth resumes showcase strong educational backgrounds and professional aspirations. However, they differ significantly in specific work experiences, project details, and achievements. Gopidi Rishith Reddy's resume emphasizes internships while Puli Bhavishwa Reddy highlights development of complex systems and AI projects.\n\n**Sources:**\n1. resume_job.pdf (Page 1)\n2. Resume_new (4).pdf (Page 1)\n3. Resume_new (4).pdf (Page 2)\n",
-      "timestamp": "2026-03-23T19:00:37.024259",
+      "content": "The document excerpts contain information related to document analysis techniques for improving readability in complex color backgrounds. Here are the person names present in these documents:\n\n- [Document: WhatsApp Image 2026-03-24 at 22.18.03.jpeg] - No specific individual names mentioned.\n- [Document: Page: 1, Section: SUBJECT: og Scientific] - The name \"P. Nagabhushan\" and \"S. Nirmala\" are present in this document as authors.\n- [Document: Page: 1, Section: Unknown] - No specific individual names mentioned.\n\nThe documents do not contain information about achievements but rather describe research on text extraction in complex color document images for enhanced readability.\n\n**Sources:**\n1. WhatsApp Image 2026-03-24 at 22.18.03.jpeg (Page 1)\n",
+      "timestamp": "2026-03-24T16:51:43.481952",
       "sources": [
         {
-          "file": "resume_job.pdf",
+          "file": "WhatsApp Image 2026-03-24 at 22.18.03.jpeg",
           "page": "1"
-        },
-        {
-          "file": "Resume_new (4).pdf",
-          "page": "1"
-        },
-        {
-          "file": "Resume_new (4).pdf",
-          "page": "2"
         }
       ]
     }

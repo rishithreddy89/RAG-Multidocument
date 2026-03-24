@@ -37,7 +37,16 @@ const FileUpload = ({ onUploadSuccess }) => {
       setUploadProgress(100);
 
       if (!response.ok) {
-        throw new Error('Upload failed');
+        let errorMessage = 'Upload failed';
+        try {
+          const errorBody = await response.json();
+          if (errorBody?.detail) {
+            errorMessage = String(errorBody.detail);
+          }
+        } catch (_) {
+          // ignore JSON parse errors and keep default message
+        }
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -60,7 +69,11 @@ const FileUpload = ({ onUploadSuccess }) => {
     onDrop,
     accept: {
       'application/pdf': ['.pdf'],
-      'text/plain': ['.txt']
+      'text/plain': ['.txt'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'image/png': ['.png']
     },
     multiple: true,
     disabled: uploading
@@ -111,7 +124,7 @@ const FileUpload = ({ onUploadSuccess }) => {
               </div>
               <div className="flex items-center space-x-2 text-xs text-gray-500">
                 <File className="w-4 h-4" />
-                <span>Supports PDF and TXT files</span>
+                <span>Supports PDF, TXT, DOC, DOCX, JPG, JPEG, PNG files</span>
               </div>
             </>
           )}

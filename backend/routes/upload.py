@@ -6,6 +6,7 @@ from fastapi import APIRouter, UploadFile, HTTPException, File
 from fastapi.responses import FileResponse
 from pathlib import Path
 from typing import List
+import mimetypes
 from schemas.chat import UploadResponse
 from config import DOCUMENTS_DIR, SUPPORTED_EXTENSIONS
 from rag.pipeline import process_document
@@ -89,14 +90,14 @@ async def upload_documents(files: List[UploadFile] = File(...)):
     
     Phase 2: Full RAG implementation with persistence
         1. Save files to persistent storage
-        2. Extract text (PDF/TXT)
+        2. Extract text (PDF/TXT/DOC/DOCX/Images via OCR)
         3. Chunk documents
         4. Generate embeddings
         5. Store in ChromaDB with document_id
         6. Save metadata
     
     Args:
-        files: List of files to upload (PDF or TXT)
+        files: List of files to upload (.pdf, .txt, .doc, .docx, .jpg, .jpeg, .png)
     
     Returns:
         UploadResponse with uploaded file names and processing status
@@ -222,8 +223,10 @@ async def get_document_file(document_id: str):
         logger.error(f"Document file not found: {file_path}")
         raise HTTPException(status_code=404, detail="Document file not found on disk")
     
+    media_type, _ = mimetypes.guess_type(str(file_path))
+
     return FileResponse(
         path=str(file_path),
-        media_type="application/pdf",
+        media_type=media_type or "application/octet-stream",
         filename=document["file_name"]
     )

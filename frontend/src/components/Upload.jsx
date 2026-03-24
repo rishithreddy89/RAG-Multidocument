@@ -74,7 +74,7 @@ const Upload = () => {
       <div className="upload-header">
         <h2>📁 Upload Documents</h2>
         <p className="upload-subtitle">
-          Supported formats: PDF, TXT
+          Supported formats: PDF, TXT, DOC, DOCX, JPG, JPEG, PNG
         </p>
       </div>
 
@@ -84,7 +84,7 @@ const Upload = () => {
             id="file-input"
             type="file"
             multiple
-            accept=".pdf,.txt"
+            accept=".pdf,.txt,.doc,.docx,.jpg,.jpeg,.png"
             onChange={handleFileChange}
             disabled={uploading}
             className="file-input"

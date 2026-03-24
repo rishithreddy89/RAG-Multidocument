@@ -218,6 +218,40 @@ def query_documents(
     }
 
 
+def get_all_document_metadata() -> List[Dict]:
+    """
+    Get metadata for ALL documents in the collection.
+    
+    Returns:
+        List of metadata summaries, one per document
+    """
+    collection = get_collection()
+    results = collection.get(
+        include=["metadatas"]
+    )
+    
+    summaries = {}
+    for metadata in results.get("metadatas", []) or []:
+        if not metadata:
+            continue
+        
+        document_id = metadata.get("document_id")
+        if not document_id:
+            continue
+        
+        if document_id not in summaries:
+            summaries[document_id] = {
+                "document_id": document_id,
+                "file_name": metadata.get("file_name", "Unknown"),
+                "document_name": metadata.get("document_name", metadata.get("file_name", "Unknown")),
+                "pdf_title": metadata.get("pdf_title", metadata.get("file_name", "Unknown")),
+                "pdf_author": metadata.get("pdf_author", "Unknown"),
+                "total_pages": metadata.get("total_pages", 1),
+            }
+    
+    return list(summaries.values())
+
+
 def get_document_metadata(document_ids: List[str]) -> List[Dict]:
     """
     Get summary metadata for selected documents from indexed chunks.

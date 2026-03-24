@@ -4,7 +4,8 @@ Chat endpoint for RAG-powered question answering.
 
 from fastapi import APIRouter, HTTPException
 from schemas.chat import ChatRequest, ChatResponse
-from rag.pipeline import rag_query
+from rag.pipeline import rag_query, classify_query, run_count_pipeline
+from rag.vectordb import get_all_document_metadata
 from services import get_chat_service
 import logging
 
@@ -51,11 +52,13 @@ async def chat(request: ChatRequest):
     Process chat message using RAG (Retrieval-Augmented Generation).
     
     RAG Pipeline:
-        1. Retrieve relevant document chunks from ChromaDB
-        2. Construct prompt with retrieved context
-        3. Generate LLM response grounded in document context
-        4. Return answer with source citations
-        5. Save to chat history
+        1. Classify query type (count, compare, summary, qa)
+        2. If count query: use deterministic word counter (no LLM)
+        3. Otherwise: Retrieve relevant document chunks from ChromaDB
+        4. Construct prompt with retrieved context
+        5. Generate LLM response grounded in document context
+        6. Return answer with source citations
+        7. Save to chat history
     
     Args:
         request: ChatRequest with user message and optional conversation history
@@ -68,31 +71,55 @@ async def chat(request: ChatRequest):
     """
     chat_service = get_chat_service()
     
-    logger.info(f"RAG query: {request.message[:100]}...")
+    logger.info(f"Chat message: {request.message[:100]}...")
     logger.info(f"Selected documents: {request.selected_documents}")
     
-    # Validate that at least one document is selected
-    if not request.selected_documents or len(request.selected_documents) == 0:
-        logger.warning("No documents selected for query")
-        raise HTTPException(
-            status_code=400, 
-            detail="Please select at least one document to query"
-        )
+    # Classify query type
+    query_type = classify_query(request.message)
+    logger.info(f"Query type detected: {query_type}")
     
     # Save user message to history
     chat_service.add_message("user", request.message)
     
     try:
-        # Execute RAG pipeline with document filtering
-        result = await rag_query(
-            request.message, 
-            top_k=5,
-            selected_document_ids=request.selected_documents
-        )
+        result = None
+        
+        # Handle count queries without requiring selected documents
+        # (they extract doc name from query text itself)
+        if query_type == "count":
+            logger.info("Count query detected - using deterministic word counter (no LLM)")
+            
+            # Get list of all available documents
+            metadata_list = get_all_document_metadata()
+            available_docs = [m["file_name"] for m in metadata_list]
+            
+            if not available_docs:
+                raise HTTPException(
+                    status_code=400,
+                    detail="No documents available to count words in"
+                )
+            
+            # Run word count pipeline (NO LLM CALL)
+            result = run_count_pipeline(request.message, available_docs)
+        else:
+            # For all other queries (QA, compare, summary), require selected documents
+            if not request.selected_documents or len(request.selected_documents) == 0:
+                logger.warning("No documents selected for query")
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Please select at least one document to query"
+                )
+            
+            # Execute RAG pipeline with document filtering
+            result = await rag_query(
+                request.message, 
+                top_k=5,
+                selected_document_ids=request.selected_documents
+            )
         
         if not result.get("success"):
             error_msg = result.get("error", "Unknown error in RAG pipeline")
-            logger.error(f"RAG query failed: {error_msg}")
+            logger.error(f"Query failed: {error_msg}")
             raise HTTPException(status_code=500, detail=error_msg)
         
         # Extract answer and sources

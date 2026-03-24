@@ -16,7 +16,7 @@ DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
 LLM_API_URL = os.getenv("LLM_API_URL", "https://umbellar-mechelle-supernationally.ngrok-free.dev/chat")
 
 # Supported file formats
-SUPPORTED_EXTENSIONS = {".pdf", ".txt"}
+SUPPORTED_EXTENSIONS = {".pdf", ".txt", ".doc", ".docx", ".jpg", ".jpeg", ".png"}
 
 # API settings
 API_TITLE = "Multi-Document Reasoning Engine API"
