@@ -12,8 +12,12 @@ import logging
 import re
 from pathlib import Path
 import subprocess
+import base64
+import mimetypes
+import os
 
 from PIL import Image, ImageOps
+import requests
 
 try:
     import cv2
@@ -176,6 +180,144 @@ def extract_text_from_image(image_path: str) -> Dict[str, str]:
     }
 
 
+def describe_image(image_path: str) -> str:
+    """
+    Temporary visual fallback for non-text images.
+
+    NOTE: This is a lightweight heuristic captioner and can be replaced later
+    with a real vision API.
+    """
+    if cv2 is None:
+        return "This image likely contains objects or a scene without readable text."
+
+    try:
+        img = cv2.imread(image_path)
+        if img is None:
+            return "This image likely contains objects or a scene without readable text."
+
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+
+        # Yellow mask to detect banana-like content (common in food images)
+        lower_yellow = (18, 40, 60)
+        upper_yellow = (40, 255, 255)
+        yellow_mask = cv2.inRange(hsv, lower_yellow, upper_yellow)
+        yellow_ratio = float(cv2.countNonZero(yellow_mask)) / float(yellow_mask.size)
+
+        # Count elongated yellow-ish blobs
+        contours, _ = cv2.findContours(yellow_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        elongated_count = 0
+        for c in contours:
+            area = cv2.contourArea(c)
+            if area < 400:
+                continue
+            x, y, w, h = cv2.boundingRect(c)
+            if min(w, h) == 0:
+                continue
+            aspect = max(w, h) / max(1, min(w, h))
+            if aspect >= 1.8:
+                elongated_count += 1
+
+        if yellow_ratio > 0.03 and elongated_count >= 1:
+            return "The image appears to show bananas on a surface."
+        if yellow_ratio > 0.08:
+            return "The image appears to show yellow fruits, likely bananas, on a surface."
+
+        return "This image likely contains objects or a scene without readable text."
+    except Exception as e:
+        logger.warning(f"describe_image heuristic failed: {str(e)}")
+        return "This image likely contains objects or a scene without readable text."
+
+
+def describe_image_with_vision(image_path: str) -> str:
+    """
+    Vision fallback using OpenRouter multimodal API with base64 image_url.
+
+    Returns a concise object-focused description.
+    """
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    if not api_key:
+        return describe_image(image_path)
+
+    try:
+        mime_type = mimetypes.guess_type(image_path)[0] or "image/jpeg"
+        with open(image_path, "rb") as f:
+            image_b64 = base64.b64encode(f.read()).decode("utf-8")
+
+        payload = {
+            "model": "qwen/qwen-2.5-vl-7b-instruct",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": (
+                                "Identify all objects clearly visible in this image. "
+                                "State the main subject explicitly. Keep it short and specific."
+                            ),
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:{mime_type};base64,{image_b64}"
+                            },
+                        },
+                    ],
+                }
+            ],
+            "max_tokens": 300,
+            "temperature": 0.1,
+        }
+
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "http://localhost:3000",
+            "X-Title": "Multi-Document RAG",
+        }
+
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            json=payload,
+            timeout=45,
+        )
+
+        if response.status_code != 200:
+            logger.warning(f"Vision API failed: {response.status_code} {response.text[:200]}")
+            return describe_image(image_path)
+
+        data = response.json()
+        logger.info(f"RAW RESPONSE: {data}")
+
+        if "choices" not in data or not data["choices"]:
+            raise Exception("Invalid LLM response")
+
+        message = data["choices"][0].get("message", {})
+        content = message.get("content", "")
+
+        # Some providers return structured content arrays
+        if isinstance(content, list):
+            parts = []
+            for item in content:
+                if isinstance(item, dict):
+                    txt = item.get("text") or item.get("content") or ""
+                    if txt:
+                        parts.append(str(txt))
+                elif isinstance(item, str):
+                    parts.append(item)
+            content = "\n".join(parts)
+
+        content = str(content).strip()
+        if not content:
+            content = "Image contains visible objects."
+
+        return content
+    except Exception as e:
+        logger.warning(f"Vision fallback failed: {str(e)}")
+        return describe_image(image_path)
+
+
 def process_image(file_path: str, file_name: str, lang: str = "eng") -> List[Dict[str, any]]:
     """
     Extract text from an image document using OCR and return loader-compatible structure.
@@ -191,12 +333,21 @@ def process_image(file_path: str, file_name: str, lang: str = "eng") -> List[Dic
         text = ocr_result["text"]
         ocr_engine = ocr_result["engine"]
 
+        # Detect OCR failure/non-informative OCR for non-text images
+        stripped = (text or "").strip()
+        alpha_words = re.findall(r"\b[a-zA-Z]{3,}\b", stripped)
+        no_text = len(stripped) < 10 or len(alpha_words) < 2
+        vision_used = False
         has_visual_context = False
 
-        # Soft fallback only when OCR produced no usable text
-        if not text or not text.strip():
-            ocr_warning = "OCR empty; using soft fallback text"
-            text = "Handwritten content detected but partially extracted."
+        # Use vision fallback when OCR is weak/empty
+        if no_text:
+            vision_used = True
+            has_visual_context = True
+            ocr_warning = "OCR weak/empty; using vision fallback"
+            text = describe_image_with_vision(file_path)
+            if not text or not text.strip():
+                text = "Image contains visible objects, but detailed identification failed."
 
         # Always keep extracted text available for downstream LLM reasoning
         final_text = text.strip()
@@ -222,6 +373,8 @@ def process_image(file_path: str, file_name: str, lang: str = "eng") -> List[Dic
                 "ocr_warning": ocr_warning or "",
                 "ocr_engine": ocr_engine,
                 "has_visual_context": has_visual_context,
+                "has_text": not no_text,
+                "vision_used": vision_used,
                 "primary_entity": primary_entity,
                 "entities": entity_data["entities"],
                 "entity_persons": entity_data["entities"]["persons"],

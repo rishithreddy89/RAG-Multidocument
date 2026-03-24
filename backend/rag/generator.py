@@ -1,17 +1,18 @@
 """
 Answer Generator
-Constructs prompts and calls remote Qwen API
+Constructs prompts and calls OpenRouter Chat Completions API
 """
 
 import httpx
+import os
 from typing import List, Dict
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Remote LLM API Configuration
-LLM_API_URL = "https://umbellar-mechelle-supernationally.ngrok-free.dev/chat"
-TIMEOUT = 120.0
+# LLM API Configuration (OpenRouter)
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+TIMEOUT = 45.0
 
 
 def build_rag_prompt(query: str, context: str) -> str:
@@ -48,7 +49,7 @@ Provide a concise, evidence-grounded answer with clear source attribution."""
 
 async def call_llm_api(prompt: str) -> str:
     """
-    Call the remote Qwen API.
+    Call OpenRouter Chat Completions API.
     
     Args:
         prompt: Prompt to send to LLM
@@ -59,28 +60,55 @@ async def call_llm_api(prompt: str) -> str:
     Raises:
         Exception: If API call fails
     """
+    api_key = os.getenv("OPENROUTER_API_KEY", "")
+    model = os.getenv("OPENROUTER_MODEL", "qwen/qwen-2.5-7b-instruct")
+
+    if not api_key:
+        raise Exception("OPENROUTER_API_KEY not set")
+
     try:
         async with httpx.AsyncClient(timeout=TIMEOUT) as client:
-            payload = {"prompt": prompt}
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                    }
+                ],
+                "max_tokens": 600,
+                "temperature": 0.2,
+            }
+
+            headers = {
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:3000",
+                "X-Title": "Multi-Document RAG"
+            }
             
-            logger.info(f"Calling remote LLM API at {LLM_API_URL}...")
+            logger.info(f"Calling OpenRouter API with model {model}...")
             logger.debug(f"Prompt length: {len(prompt)} chars")
             
-            response = await client.post(LLM_API_URL, json=payload)
+            response = await client.post(OPENROUTER_API_URL, headers=headers, json=payload)
             
             # Check response status
             if response.status_code != 200:
                 error_detail = response.text[:500]  # First 500 chars of error
-                error_msg = f"LLM API returned status {response.status_code}: {error_detail}"
+                error_msg = f"OpenRouter API returned status {response.status_code}: {error_detail}"
                 logger.error(error_msg)
                 raise Exception(error_msg)
             
             # Parse response
             result = response.json()
-            answer = result.get("response", "")
+            if "choices" not in result or not result["choices"]:
+                raise Exception(f"Invalid OpenRouter response: {result}")
+
+            answer = result["choices"][0].get("message", {}).get("content", "")
+            answer = (answer or "").strip()
             
             if not answer:
-                error_msg = f"LLM API returned empty response. Full response: {result}"
+                error_msg = f"OpenRouter API returned empty response. Full response: {result}"
                 logger.error(error_msg)
                 raise Exception(error_msg)
             
@@ -88,17 +116,17 @@ async def call_llm_api(prompt: str) -> str:
             return answer
     
     except httpx.ConnectError as e:
-        error_msg = f"Cannot connect to LLM API at {LLM_API_URL}: {str(e)}"
+        error_msg = f"Cannot connect to OpenRouter API: {str(e)}"
         logger.error(error_msg)
         raise Exception(error_msg)
     
     except httpx.TimeoutException as e:
-        error_msg = f"LLM API timeout after {TIMEOUT}s: {str(e)}"
+        error_msg = f"OpenRouter API timeout after {TIMEOUT}s: {str(e)}"
         logger.error(error_msg)
         raise Exception(error_msg)
     
     except httpx.HTTPError as e:
-        error_msg = f"LLM API HTTP error: {type(e).__name__} - {str(e)}"
+        error_msg = f"OpenRouter API HTTP error: {type(e).__name__} - {str(e)}"
         logger.error(error_msg)
         raise Exception(error_msg)
     
@@ -142,4 +170,23 @@ async def generate_answer(query: str, retrieved_chunks: List[Dict]) -> Dict:
     
     except Exception as e:
         logger.error(f"Error generating answer: {str(e)}")
-        raise
+
+        # Safe fallback when LLM is unavailable
+        from .retriever import extract_sources
+
+        fallback_text = "LLM service unavailable. Please try again in a moment."
+        if retrieved_chunks:
+            joined = "\n".join(
+                (chunk.get("text", "") or "").strip()
+                for chunk in retrieved_chunks[:1]
+            ).strip()
+            if joined:
+                fallback_text = (
+                    "LLM service unavailable. Best extracted context:\n\n"
+                    f"{joined[:700]}"
+                )
+
+        return {
+            "answer": fallback_text,
+            "sources": extract_sources(retrieved_chunks)
+        }

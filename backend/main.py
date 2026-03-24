@@ -7,11 +7,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import API_TITLE, API_VERSION, API_DESCRIPTION
 from routes import chat, upload, debug
+from dotenv import load_dotenv
 import logging
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Load environment variables from backend/.env
+load_dotenv()
 
 # Initialize FastAPI app
 app = FastAPI(

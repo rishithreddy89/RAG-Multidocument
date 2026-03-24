@@ -2,16 +2,16 @@
   "messages": [
     {
       "role": "user",
-      "content": "what is present in this image",
-      "timestamp": "2026-03-24T17:21:50.637768"
+      "content": "who won map an app hackathon",
+      "timestamp": "2026-03-24T18:19:53.596588"
     },
     {
       "role": "assistant",
-      "content": "In this image, the subject is unknown. [Document: download (3).jpeg]\n\n**Sources:**\n1. download (3).jpeg (Page 1)\n",
-      "timestamp": "2026-03-24T17:21:56.606245",
+      "content": "Puli Bhavishwa Reddy won the \"Map an App\" Hackathon. This achievement is mentioned in his resume under the ACHIEVEMENTS section, where it states: \"Winner of 'Map an App' Hackathon - Developed an innovative One-Tap Blood Donation App.\" [Document: resume_job.pdf]\n\n**Sources:**\n1. resume_job.pdf (Page 1)\n",
+      "timestamp": "2026-03-24T18:19:57.227858",
       "sources": [
         {
-          "file": "download (3).jpeg",
+          "file": "resume_job.pdf",
           "page": "1"
         }
       ]
