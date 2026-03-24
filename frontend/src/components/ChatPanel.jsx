@@ -14,7 +14,8 @@ const ChatPanel = ({
   isHidden,
   initialMessages = [],
   isLoadingState = false,
-  selectedDocumentIds = []
+  selectedDocumentIds = [],
+  onHighlightClick,
 }) => {
   if (isHidden) return null;
 
@@ -63,6 +64,7 @@ const ChatPanel = ({
           initialMessages={initialMessages}
           isLoadingState={isLoadingState}
           selectedDocumentIds={selectedDocumentIds}
+          onHighlightClick={onHighlightClick}
         />
       </div>
     </div>

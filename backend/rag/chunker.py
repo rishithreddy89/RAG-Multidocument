@@ -38,6 +38,14 @@ CHUNK_SIZE_CHARS = CHUNK_SIZE * CHARS_PER_TOKEN  # ~1600 characters
 CHUNK_OVERLAP_CHARS = CHUNK_OVERLAP * CHARS_PER_TOKEN  # ~320 characters
 
 
+def _to_int(value, default: int = 0) -> int:
+    """Best-effort conversion to int."""
+    try:
+        return int(value)
+    except Exception:
+        return default
+
+
 def create_text_splitter(
     chunk_size: int = CHUNK_SIZE,
     chunk_overlap: int = CHUNK_OVERLAP
@@ -195,19 +203,26 @@ def chunk_documents(
             logger.warning(f"Skipping empty document: {metadata.get('file_name', 'unknown')}")
             continue
         
-        # Create LangChain Document object for processing
-        langchain_doc = Document(
-            page_content=text,
-            metadata=metadata
-        )
-        
-        # Split document into chunks
-        chunks = splitter.split_documents([langchain_doc])
+        # Split text directly so we can compute per-chunk char offsets
+        chunk_texts = splitter.split_text(text)
+        chunk_texts = [c.strip() for c in chunk_texts if c and c.strip()]
+        total_chunks = len(chunk_texts)
+        cursor = 0
         
         # Enrich each chunk with enhanced metadata
-        for chunk_idx, chunk in enumerate(chunks):
+        for chunk_idx, chunk_text in enumerate(chunk_texts):
+            # Compute chunk char offsets in source page text
+            search_start = max(0, cursor - CHUNK_OVERLAP_CHARS)
+            char_start = text.find(chunk_text, search_start)
+            if char_start == -1:
+                char_start = text.find(chunk_text)
+            if char_start == -1:
+                char_start = cursor
+            char_end = min(len(text), char_start + len(chunk_text))
+            cursor = max(cursor, char_end)
+
             # Detect section title from chunk content
-            section_title = detect_section_title(chunk.page_content)
+            section_title = detect_section_title(chunk_text)
             
             # Get entity data from source metadata
             entity_persons = metadata.get("entity_persons", [])
@@ -221,19 +236,33 @@ def chunk_documents(
             roles_str = "|".join(entity_roles) if entity_roles else ""
             
             # Enrich metadata - use only flat, primitive types for ChromaDB compatibility
-            chunk.metadata.update({
-                "document_name": metadata.get("file_name", metadata.get("document_name", "unknown")),
-                "page_number": str(metadata.get("page_number", metadata.get("page", 1))),
+            chunk_metadata = dict(metadata)
+            page_number = _to_int(metadata.get("page_number", metadata.get("page", 1)), 1)
+            document_name = metadata.get("file_name", metadata.get("document_name", "unknown"))
+
+            chunk_metadata.update({
+                "doc_name": document_name,
+                "document_name": document_name,
+                "page": str(page_number),
+                "page_number": str(page_number),
                 "section_title": section_title,
                 "chunk_index": str(chunk_idx),
-                "total_chunks": str(len(chunks)),
-                "chunk_size_tokens": str(len(chunk.page_content) // CHARS_PER_TOKEN),
+                "total_chunks": str(total_chunks),
+                "chunk_size_tokens": str(len(chunk_text) // CHARS_PER_TOKEN),
+                "char_start": str(char_start),
+                "char_end": str(char_end),
+                "bbox": metadata.get("bbox", ""),
                 # Entity extraction data (flattened for ChromaDB)
                 "primary_entity": metadata.get("primary_entity", "Unknown"),
                 "entity_persons": persons_str,
                 "entity_organizations": orgs_str,
                 "entity_roles": roles_str
             })
+
+            chunk = Document(
+                page_content=chunk_text,
+                metadata=chunk_metadata
+            )
             
             all_chunked_docs.append(chunk)
     

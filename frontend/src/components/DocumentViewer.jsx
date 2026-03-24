@@ -9,7 +9,7 @@ import TextViewer from './TextViewer';
 import ImageViewer from './ImageViewer';
 import { FileQuestion } from 'lucide-react';
 
-const DocumentViewer = ({ file }) => {
+const DocumentViewer = ({ file, highlightState }) => {
   if (!file) {
     return (
       <div className="flex flex-col items-center justify-center h-full bg-gray-50">
@@ -27,11 +27,24 @@ const DocumentViewer = ({ file }) => {
   const isImage = ['.jpg', '.jpeg', '.png'].some(ext => file.name.toLowerCase().endsWith(ext));
 
   if (isPDF) {
-    return <PDFViewer file={file} />;
+    return (
+      <PDFViewer
+        file={file}
+        activePage={highlightState?.activePage}
+        activeHighlightText={highlightState?.activeHighlightText}
+        highlightTrigger={highlightState?.trigger}
+      />
+    );
   } else if (isTXT) {
     return <TextViewer file={file} />;
   } else if (isImage) {
-    return <ImageViewer file={file} />;
+    return (
+      <ImageViewer
+        file={file}
+        activeBbox={highlightState?.activeBbox}
+        highlightTrigger={highlightState?.trigger}
+      />
+    );
   }
 
   return (

@@ -8,7 +8,7 @@ import { Send, Loader2, History, Trash2 } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 import { sendChatMessage, clearChatHistory } from '../services/api';
 
-const ChatWindow = ({ initialMessages = [], isLoadingState = false, selectedDocumentIds = [] }) => {
+const ChatWindow = ({ initialMessages = [], isLoadingState = false, selectedDocumentIds = [], onHighlightClick }) => {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -65,9 +65,15 @@ const ChatWindow = ({ initialMessages = [], isLoadingState = false, selectedDocu
     try {
       // Call RAG endpoint with selected documents
       const response = await sendChatMessage(userMessage, selectedDocumentIds);
+      const answer = response?.answer || response?.response || 'No answer generated.';
       
       // Add assistant response
-      setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+      setMessages(prev => [...prev, {
+        role: 'assistant',
+        content: answer,
+        sources: response?.sources || [],
+        highlights: response?.highlights || [],
+      }]);
     } catch (error) {
       setMessages(prev => [
         ...prev,
@@ -141,7 +147,7 @@ const ChatWindow = ({ initialMessages = [], isLoadingState = false, selectedDocu
         ) : (
           <>
             {messages.map((msg, index) => (
-              <MessageBubble key={index} message={msg} />
+              <MessageBubble key={index} message={msg} onHighlightClick={onHighlightClick} />
             ))}
             {loading && (
               <div className="flex items-start space-x-3">

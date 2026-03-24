@@ -145,7 +145,57 @@ def run_easyocr(image_path: str) -> str:
         return ""
 
 
-def extract_text_from_image(image_path: str) -> Dict[str, str]:
+def run_easyocr_with_boxes(image_path: str) -> Dict[str, any]:
+    """
+    Run EasyOCR and return both text and bounding boxes.
+
+    Returns bbox in [x, y, w, h] format for each detected span.
+    """
+    try:
+        reader = get_easyocr_reader()
+        results = reader.readtext(image_path)
+        texts = []
+        boxes = []
+
+        for item in results:
+            if len(item) < 2:
+                continue
+
+            points = item[0]
+            span_text = (item[1] or "").strip()
+            if not span_text:
+                continue
+
+            try:
+                xs = [float(p[0]) for p in points]
+                ys = [float(p[1]) for p in points]
+                x_min = min(xs)
+                y_min = min(ys)
+                x_max = max(xs)
+                y_max = max(ys)
+                boxes.append({
+                    "text": span_text,
+                    "bbox": [x_min, y_min, x_max - x_min, y_max - y_min]
+                })
+            except Exception:
+                # Skip malformed bbox entries
+                pass
+
+            texts.append(span_text)
+
+        return {
+            "text": " ".join(texts).strip(),
+            "boxes": boxes
+        }
+    except Exception as e:
+        logger.warning(f"EasyOCR bbox extraction failed: {str(e)}")
+        return {
+            "text": "",
+            "boxes": []
+        }
+
+
+def extract_text_from_image(image_path: str) -> Dict[str, any]:
     """
     Extract text from image using multi-engine OCR.
 
@@ -155,7 +205,9 @@ def extract_text_from_image(image_path: str) -> Dict[str, str]:
     3) Combine both outputs for better coverage (printed + handwriting)
     """
     text_tesseract = run_tesseract(image_path)
-    text_easyocr = run_easyocr(image_path)
+    easyocr_result = run_easyocr_with_boxes(image_path)
+    text_easyocr = easyocr_result.get("text", "")
+    ocr_boxes = easyocr_result.get("boxes", [])
 
     combined_parts = []
     if text_tesseract and text_tesseract.strip():
@@ -176,7 +228,8 @@ def extract_text_from_image(image_path: str) -> Dict[str, str]:
 
     return {
         "text": combined_text,
-        "engine": engine
+        "engine": engine,
+        "boxes": ocr_boxes,
     }
 
 
@@ -332,6 +385,10 @@ def process_image(file_path: str, file_name: str, lang: str = "eng") -> List[Dic
         ocr_result = extract_text_from_image(file_path)
         text = ocr_result["text"]
         ocr_engine = ocr_result["engine"]
+        ocr_boxes = ocr_result.get("boxes", [])
+
+        with Image.open(file_path) as img:
+            image_width, image_height = img.size
 
         # Detect OCR failure/non-informative OCR for non-text images
         stripped = (text or "").strip()
@@ -375,6 +432,9 @@ def process_image(file_path: str, file_name: str, lang: str = "eng") -> List[Dic
                 "has_visual_context": has_visual_context,
                 "has_text": not no_text,
                 "vision_used": vision_used,
+                "bbox": ",".join(str(v) for v in (ocr_boxes[0]["bbox"] if ocr_boxes else [])),
+                "bbox_image_width": str(image_width),
+                "bbox_image_height": str(image_height),
                 "primary_entity": primary_entity,
                 "entities": entity_data["entities"],
                 "entity_persons": entity_data["entities"]["persons"],

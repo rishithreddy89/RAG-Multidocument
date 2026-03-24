@@ -46,7 +46,7 @@ class ChatService:
             logger.error(f"Error saving chat history: {e}")
             raise
     
-    def add_message(self, role: str, content: str, sources: List[Dict] = None):
+    def add_message(self, role: str, content: str, sources: List[Dict] = None, highlights: List[Dict] = None):
         """
         Add a message to chat history.
         
@@ -54,6 +54,7 @@ class ChatService:
             role: 'user' or 'assistant'
             content: Message content
             sources: Optional list of source documents
+            highlights: Optional list of highlight spans
         """
         message = {
             "role": role,
@@ -63,6 +64,8 @@ class ChatService:
         
         if sources:
             message["sources"] = sources
+        if highlights:
+            message["highlights"] = highlights
         
         self.history["messages"].append(message)
         self._save_history()

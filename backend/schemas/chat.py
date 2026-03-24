@@ -3,6 +3,27 @@ Pydantic schemas for chat-related requests and responses.
 """
 
 from pydantic import BaseModel, Field
+from typing import Optional
+
+
+class HighlightItem(BaseModel):
+    """Grounding span used by viewer highlighting."""
+    doc_name: str = Field(..., description="Source document name")
+    page: int = Field(default=1, description="1-based page number")
+    text: str = Field(..., description="Exact evidence span")
+    score: float = Field(default=0.0, description="Similarity/confidence score")
+    char_start: Optional[int] = Field(default=None, description="Optional start char offset")
+    char_end: Optional[int] = Field(default=None, description="Optional end char offset")
+    bbox: Optional[list[float]] = Field(default=None, description="Optional [x, y, w, h] box")
+
+
+class SourceItem(BaseModel):
+    """Simple source citation item."""
+    doc: Optional[str] = Field(default=None, description="Source document name")
+    file: str = Field(..., description="Source file name")
+    page: int = Field(default=1, description="1-based page number")
+    text: Optional[str] = Field(default=None, description="Supporting evidence sentence")
+    score: Optional[float] = Field(default=None, description="Evidence confidence/relevance score")
 
 
 class ChatRequest(BaseModel):
@@ -13,7 +34,10 @@ class ChatRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     """Response model for chat endpoint."""
-    response: str = Field(..., description="LLM-generated reply")
+    response: str = Field(..., description="Backward-compatible combined reply")
+    answer: str = Field(..., description="LLM-generated answer only")
+    sources: list[SourceItem] = Field(default_factory=list, description="Source citations")
+    highlights: list[HighlightItem] = Field(default_factory=list, description="Viewer highlight spans")
 
 
 class UploadResponse(BaseModel):

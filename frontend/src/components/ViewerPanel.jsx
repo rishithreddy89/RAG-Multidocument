@@ -11,6 +11,7 @@ const ViewerPanel = ({
   file, 
   isMaximized, 
   onToggleMaximize,
+  highlightState,
   style 
 }) => {
   return (
@@ -53,7 +54,7 @@ const ViewerPanel = ({
 
       {/* Document Content */}
       <div className="flex-1 overflow-hidden">
-        <DocumentViewer file={file} />
+        <DocumentViewer file={file} highlightState={highlightState} />
       </div>
     </div>
   );

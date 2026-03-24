@@ -77,7 +77,7 @@ export const clearChatHistory = async () => {
  * 
  * @param {string} message - User's question or message
  * @param {Array<string>} selectedDocuments - Array of document IDs to query
- * @returns {Promise<string>} - LLM response
+ * @returns {Promise<Object>} - Structured response with answer/highlights/sources
  * @throws {Error} - If API request fails
  */
 export const sendChatMessage = async (message, selectedDocuments = []) => {
@@ -86,7 +86,7 @@ export const sendChatMessage = async (message, selectedDocuments = []) => {
       message,
       selected_documents: selectedDocuments
     });
-    return response.data.response;
+    return response.data;
   } catch (error) {
     if (error.response) {
       throw new Error(error.response.data.detail || 'Failed to get response from LLM');

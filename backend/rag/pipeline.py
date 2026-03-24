@@ -12,9 +12,266 @@ from .chunker import chunk_documents
 from .embedder import embed_texts
 from .vectordb import add_documents, get_document_metadata, get_document_chunks
 from .retriever import retrieve, extract_sources
-from .generator import generate_answer
+from .generator import generate_answer, call_llm_api
+from .utils import clean_candidate_lines, score_sentence_relevance, split_sentences
 
 logger = logging.getLogger(__name__)
+
+
+def _to_int(value, default: int | None = None):
+    try:
+        return int(value)
+    except Exception:
+        return default
+
+
+def _parse_bbox(value):
+    """Parse bbox from list/tuple or comma-separated string into [x, y, w, h]."""
+    if value is None:
+        return None
+
+    if isinstance(value, (list, tuple)) and len(value) >= 4:
+        try:
+            return [float(value[0]), float(value[1]), float(value[2]), float(value[3])]
+        except Exception:
+            return None
+
+    if isinstance(value, str):
+        parts = [p.strip() for p in value.split(",") if p.strip()]
+        if len(parts) >= 4:
+            try:
+                return [float(parts[0]), float(parts[1]), float(parts[2]), float(parts[3])]
+            except Exception:
+                return None
+
+    return None
+
+
+def _split_sentences(text: str) -> List[str]:
+    if not text:
+        return []
+    parts = re.split(r"(?<=[.!?])\s+|\n+", text)
+    return [p.strip() for p in parts if p and p.strip()]
+
+
+def _normalize_for_dedupe(text: str) -> str:
+    if not text:
+        return ""
+    return re.sub(r"\s+", " ", text).strip().lower()
+
+
+def _is_query_about_experience(query: str) -> bool:
+    q = (query or "").lower()
+    return any(token in q for token in ["experience", "work", "intern", "job"])
+
+
+def _section_boost(query: str, metadata: Dict) -> float:
+    """Section-aware boosting (no hard filtering)."""
+    section = str((metadata or {}).get("section") or (metadata or {}).get("section_title") or "").lower()
+    if _is_query_about_experience(query) and "experience" in section:
+        return 0.2
+    return 0.0
+
+
+def _chunk_to_source(chunk: Dict, score: float | None = None) -> Dict:
+    metadata = chunk.get("metadata", {}) or {}
+    text = (chunk.get("text") or "").strip()
+    sentences = split_sentences(text)
+    evidence_text = sentences[0] if sentences else (text[:260] + "..." if len(text) > 260 else text)
+
+    doc_name = chunk.get("doc_name") or metadata.get("doc_name") or metadata.get("document_name") or metadata.get("file_name") or "Unknown"
+    page = _to_int(chunk.get("page", metadata.get("page", metadata.get("page_number"))), 1) or 1
+    bbox = _parse_bbox(chunk.get("bbox", metadata.get("bbox")))
+
+    return {
+        "doc": doc_name,
+        "file": doc_name,
+        "page": page,
+        "text": evidence_text,
+        "score": float(score if score is not None else chunk.get("score", chunk.get("rerank_score", chunk.get("relevance_score", 0.0)))),
+        "query_similarity": float(chunk.get("rerank_score", chunk.get("score", 0.0))),
+        "answer_similarity": 0.0,
+        "bbox": bbox,
+    }
+
+
+def _fallback_sources_from_chunks(chunks: List[Dict], limit: int = 2) -> List[Dict]:
+    if not chunks:
+        return []
+    ranked = sorted(
+        chunks,
+        key=lambda c: c.get("rerank_score", c.get("score", c.get("relevance_score", 0.0))),
+        reverse=True,
+    )
+    return [_chunk_to_source(chunk) for chunk in ranked[:max(1, limit)]]
+
+
+async def _extract_supporting_sentences(query: str, answer: str, chunk_text: str) -> List[str]:
+    """
+    LLM extraction of supporting sentences for source attribution.
+    """
+    if not chunk_text or not chunk_text.strip():
+        return []
+
+    prompt = f"""
+Query: {query}
+Answer: {answer}
+
+From the text below, extract sentences that are likely relevant to the query and help justify the answer.
+
+Rules:
+- Return only likely relevant sentences
+- No extra text
+- No headings
+- No unrelated lines
+- One sentence per line
+
+Text:
+{chunk_text}
+""".strip()
+
+    try:
+        raw = await call_llm_api(prompt)
+        candidate_lines = [line.strip(" -•\t") for line in raw.splitlines() if line and line.strip()]
+        cleaned = clean_candidate_lines(candidate_lines)
+        if cleaned:
+            return cleaned
+    except Exception as e:
+        logger.warning(f"Supporting-sentence extraction failed, using deterministic fallback: {str(e)}")
+
+    # Deterministic fallback: sentence split + cleanup
+    return clean_candidate_lines(split_sentences(chunk_text))
+
+
+async def build_dynamic_sources(query: str, answer: str, chunks: List[Dict], max_sources: int = 5) -> List[Dict]:
+    """
+    Dynamic, query-agnostic source attribution:
+    ANSWER -> supporting spans -> filtered evidence
+    """
+    if not chunks:
+        return []
+
+    logger.info(f"Source attribution debug | chunks retrieved: {len(chunks)}")
+
+    evidence = []
+    total_extracted = 0
+    for chunk in chunks:
+        text = (chunk.get("text") or "").strip()
+        if not text:
+            continue
+
+        metadata = chunk.get("metadata", {}) or {}
+        doc_name = chunk.get("doc_name") or metadata.get("doc_name") or metadata.get("document_name") or metadata.get("file_name") or "Unknown"
+        page = _to_int(chunk.get("page", metadata.get("page", metadata.get("page_number"))), 1) or 1
+        bbox = _parse_bbox(chunk.get("bbox", metadata.get("bbox")))
+        base_score = float(chunk.get("rerank_score", chunk.get("score", chunk.get("relevance_score", 0.0))))
+        base_score += _section_boost(query, metadata)
+
+        extracted_sentences = await _extract_supporting_sentences(query, answer, text)
+        total_extracted += len(extracted_sentences)
+        for sentence in extracted_sentences:
+            query_sim, answer_sim, combined = score_sentence_relevance(query, answer, sentence)
+
+            # Relevance filtering
+            if query_sim <= 0.3:
+                continue
+
+            evidence.append({
+                "doc": doc_name,
+                "file": doc_name,
+                "page": page,
+                "text": sentence,
+                "score": float(max(base_score, combined + _section_boost(query, metadata))),
+                "query_similarity": float(query_sim),
+                "answer_similarity": float(answer_sim),
+                "bbox": bbox,
+            })
+
+    logger.info(f"Source attribution debug | sentences extracted: {total_extracted}")
+    logger.info(f"Source attribution debug | evidence after filtering: {len(evidence)}")
+
+    if not evidence:
+        fallback = _fallback_sources_from_chunks(chunks, limit=2)
+        logger.info(f"Source attribution debug | fallback chunk sources used: {len(fallback)}")
+        return fallback
+
+    # Deduplicate and rank
+    deduped = []
+    seen = set()
+    for item in sorted(
+        evidence,
+        key=lambda e: (e.get("score", 0.0), e.get("answer_similarity", 0.0), e.get("query_similarity", 0.0)),
+        reverse=True,
+    ):
+        key = (item.get("doc", ""), item.get("page", 1), _normalize_for_dedupe(item.get("text", "")))
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+        if len(deduped) >= max_sources:
+            break
+
+    # Always return at least 2 sources by backing off to top chunks if needed
+    if len(deduped) < 2:
+        fallback = _fallback_sources_from_chunks(chunks, limit=2)
+        seen = {(item.get("doc", ""), item.get("page", 1), _normalize_for_dedupe(item.get("text", ""))) for item in deduped}
+        for fb in fallback:
+            key = (fb.get("doc", ""), fb.get("page", 1), _normalize_for_dedupe(fb.get("text", "")))
+            if key in seen:
+                continue
+            deduped.append(fb)
+            seen.add(key)
+            if len(deduped) >= 2:
+                break
+
+    logger.info(f"Source attribution debug | final sources: {len(deduped)}")
+
+    return deduped
+
+
+def extract_highlights_from_sources(sources: List[Dict], max_highlights: int = 8) -> List[Dict]:
+    """
+    Extract exact sentence-level evidence spans from retrieved chunks.
+
+    This is intentionally separate from answer generation.
+    """
+    if not sources:
+        return []
+
+    highlights = []
+    for source in sources:
+        span_text = (source.get("text") or "").strip()
+        if not span_text:
+            continue
+
+        page = _to_int(source.get("page"), 1) or 1
+        doc_name = source.get("doc") or source.get("file") or "Unknown"
+        score = float(source.get("score", 0.0))
+        bbox = _parse_bbox(source.get("bbox"))
+
+        highlights.append({
+            "doc_name": doc_name,
+            "page": page,
+            "text": span_text,
+            "score": float(score),
+            "char_start": None,
+            "char_end": None,
+            "bbox": bbox,
+        })
+
+    # Deduplicate and sort by score
+    deduped = []
+    seen = set()
+    for item in sorted(highlights, key=lambda h: h.get("score", 0.0), reverse=True):
+        key = (item["doc_name"], item["page"], item["text"])
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+        if len(deduped) >= max_highlights:
+            break
+
+    return deduped
 
 
 def _is_page_count_query(question: str) -> bool:
@@ -408,6 +665,7 @@ async def process_document(file_path: str, file_name: str, document_id: str = No
         if document_id:
             for chunk in chunks:
                 chunk.metadata["document_id"] = document_id
+                chunk.metadata["doc_id"] = document_id
         
         # Step 3: Extract data for embeddings and storage
         texts = [chunk.page_content for chunk in chunks]
@@ -491,12 +749,15 @@ async def rag_query(question: str, top_k: int = 5, selected_document_ids: List[s
                 max_chunks_per_document=30
             )
         else:
-            # Step 1: Retrieve relevant chunks from selected documents only
+            # Step 1: Broad retrieval candidates (query-agnostic, no section filters)
+            broad_k = max(10, top_k * 3)
             retrieved_chunks = retrieve(
                 question,
                 top_k=top_k,
+                broad_k=broad_k,
                 selected_document_ids=selected_document_ids
             )
+            logger.info(f"Source attribution debug | chunks after rerank: {len(retrieved_chunks)}")
 
         # Step 2: Check if any relevant documents found
         if not retrieved_chunks:
@@ -504,11 +765,29 @@ async def rag_query(question: str, top_k: int = 5, selected_document_ids: List[s
             return {
                 "success": True,
                 "answer": "No relevant information found in uploaded documents.",
-                "sources": []
+                "sources": [],
+                "highlights": []
             }
         
-        # Step 3: Generate answer
+        # Step 3: Generate answer from reranked chunks
         result = await generate_answer(question, retrieved_chunks)
+        answer = (result.get("answer") or "").strip()
+
+        # Step 4-9: Dynamic evidence extraction and filtering
+        dynamic_sources = await build_dynamic_sources(question, answer, retrieved_chunks, max_sources=max(3, min(5, top_k)))
+
+        # Step 10: Safety fallback if no strong evidence is found
+        if not dynamic_sources:
+            fallback_sources = _fallback_sources_from_chunks(retrieved_chunks, limit=2)
+            return {
+                "success": True,
+                "answer": answer or "Unable to generate a grounded answer.",
+                "sources": fallback_sources,
+                "highlights": extract_highlights_from_sources(fallback_sources),
+            }
+
+        result["sources"] = dynamic_sources
+        result["highlights"] = extract_highlights_from_sources(dynamic_sources)
         result["success"] = True
         
         logger.info("RAG query completed successfully")
@@ -527,20 +806,23 @@ async def rag_query(question: str, top_k: int = 5, selected_document_ids: List[s
                 return {
                     "success": True,
                     "answer": "The model took too long while preparing a full-document summary. Please try a more specific summary request such as chapter-wise summary, summary of the first half, or summary of a specific topic.",
-                    "sources": sources
+                    "sources": sources,
+                    "highlights": extract_highlights_from_sources(sources)
                 }
 
             return {
                 "success": True,
                 "answer": "The model took too long to generate a grounded answer. Please try a more specific question.",
-                "sources": sources
+                "sources": sources,
+                "highlights": extract_highlights_from_sources(sources)
             }
         
         return {
             "success": False,
             "error": error_msg,
             "answer": f"Error processing your question: {str(e)}",
-            "sources": []
+            "sources": [],
+            "highlights": []
         }
 
 

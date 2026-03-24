@@ -12,6 +12,7 @@ import ViewerPanel from './components/ViewerPanel';
 import ChatPanel from './components/ChatPanel';
 import Resizer from './components/Resizer';
 import { fetchDocuments, deleteDocument as apiDeleteDocument, fetchChatHistory } from './services/api';
+import { createInitialHighlightState, buildHighlightState } from './HighlightStore';
 
 function App() {
   // Document state
@@ -23,6 +24,7 @@ function App() {
   // Chat state
   const [chatMessages, setChatMessages] = useState([]);
   const [isLoadingState, setIsLoadingState] = useState(true);
+  const [activeHighlight, setActiveHighlight] = useState(createInitialHighlightState);
 
   // Resizable panels hook
   const {
@@ -146,6 +148,22 @@ function App() {
     });
   };
 
+  const handleHighlightClick = (highlight) => {
+    if (!highlight) return;
+
+    const targetDocName = (highlight.doc_name || '').toLowerCase();
+    const targetFile = uploadedFiles.find(
+      (file) => (file.name || '').toLowerCase() === targetDocName
+    );
+
+    if (targetFile) {
+      setSelectedFile(targetFile);
+      setShowUpload(false);
+    }
+
+    setActiveHighlight(buildHighlightState(highlight));
+  };
+
   return (
     <div className="h-screen flex flex-col bg-gradient-to-br from-slate-50 to-slate-100 overflow-hidden">
       {/* Header */}
@@ -200,6 +218,7 @@ function App() {
           file={selectedFile}
           isMaximized={isViewerMaximized}
           onToggleMaximize={toggleViewerMaximize}
+          highlightState={activeHighlight}
           style={{ width: getViewerWidth() }}
         />
 
@@ -220,6 +239,7 @@ function App() {
           initialMessages={chatMessages}
           isLoadingState={isLoadingState}
           selectedDocumentIds={selectedDocumentIds}
+          onHighlightClick={handleHighlightClick}
         />
       </div>
 

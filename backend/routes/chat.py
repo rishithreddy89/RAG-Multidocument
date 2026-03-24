@@ -122,24 +122,24 @@ async def chat(request: ChatRequest):
             logger.error(f"Query failed: {error_msg}")
             raise HTTPException(status_code=500, detail=error_msg)
         
-        # Extract answer and sources
+        # Extract answer, sources, and highlights
         answer = result.get("answer", "No answer generated.")
         sources = result.get("sources", [])
+        highlights = result.get("highlights", [])
         
-        # Format response with sources
+        # Backward-compatible response text (answer only)
         response_text = answer
-        if sources:
-            response_text += "\n\n**Sources:**\n"
-            for i, source in enumerate(sources[:3], 1):  # Show top 3 sources
-                doc_name = source.get("file", source.get("document_name", "Unknown"))
-                page = source.get("page", "N/A")
-                response_text += f"{i}. {doc_name} (Page {page})\n"
         
         # Save assistant response to history
-        chat_service.add_message("assistant", response_text, sources)
+        chat_service.add_message("assistant", response_text, sources, highlights)
         
-        logger.info(f"RAG response generated with {len(sources)} sources")
-        return ChatResponse(response=response_text)
+        logger.info(f"RAG response generated with {len(sources)} sources and {len(highlights)} highlights")
+        return ChatResponse(
+            response=response_text,
+            answer=answer,
+            sources=sources,
+            highlights=highlights,
+        )
     
     except HTTPException:
         raise

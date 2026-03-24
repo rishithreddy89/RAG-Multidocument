@@ -2,17 +2,91 @@
   "messages": [
     {
       "role": "user",
-      "content": "who won map an app hackathon",
-      "timestamp": "2026-03-24T18:19:53.596588"
+      "content": "give details about his experience",
+      "timestamp": "2026-03-24T19:51:40.032336"
     },
     {
       "role": "assistant",
-      "content": "Puli Bhavishwa Reddy won the \"Map an App\" Hackathon. This achievement is mentioned in his resume under the ACHIEVEMENTS section, where it states: \"Winner of 'Map an App' Hackathon - Developed an innovative One-Tap Blood Donation App.\" [Document: resume_job.pdf]\n\n**Sources:**\n1. resume_job.pdf (Page 1)\n",
-      "timestamp": "2026-03-24T18:19:57.227858",
+      "content": "Puli Bhavishwa Reddy has experience in both contributing to a startup and leading a project as an intern. Here are the details:\n\n1. **StaySync (A Hostel Management Startup)**\n   - Contributed to the development of a web and mobile-based hostel management system.\n   - Used technologies such as ReactJS, Node.js, MongoDB, and Capacitor.\n   - Improved operational transparency and reduced manual workload for students and administrators.\n\n2. **Web and App Developer Intern (Bandiwala)**\n   - Led the end-to-end development of Bandiwala's web (Next.js) and mobile (Flutter) platforms.\n   - Designed scalable front-end architectures and integrated RESTful APIs for seamless cross-platform functionality.\n   - Managed the complete project lifecycle from planning to production deployment.\n\nThese details are sourced directly from the provided document excerpt.",
+      "timestamp": "2026-03-24T19:51:59.627718",
       "sources": [
         {
+          "doc": "resume_job.pdf",
           "file": "resume_job.pdf",
-          "page": "1"
+          "page": 1,
+          "text": "He contributed to the development of a web and mobile-based hostel management system at StaySync, a Hostel Management Startup.",
+          "score": 0.4294406635618891,
+          "query_similarity": 0.3234392575481272,
+          "answer_similarity": 0.6682914659625422,
+          "bbox": null
+        },
+        {
+          "doc": "resume_job.pdf",
+          "file": "resume_job.pdf",
+          "page": 1,
+          "text": "Puli Bhavishwa Reddy has experience in both contributing to a startup and leading a project as an intern.",
+          "score": 0.41358308749136646,
+          "query_similarity": 0.3683002616371131,
+          "answer_similarity": 0.5443886168003167,
+          "bbox": null
+        },
+        {
+          "doc": "resume_job.pdf",
+          "file": "resume_job.pdf",
+          "page": 1,
+          "text": "He designed scalable front-end architectures and integrated RESTful APIs for seamless cross-platform functionality.",
+          "score": 0.3797565555120436,
+          "query_similarity": 0.33668524526451116,
+          "answer_similarity": 0.5083228684282737,
+          "bbox": null
+        },
+        {
+          "doc": "resume_job.pdf",
+          "file": "resume_job.pdf",
+          "page": 1,
+          "text": "His contribution improved operational transparency and reduced manual workload for students and administrators.",
+          "score": 0.28729563543043773,
+          "query_similarity": 0.3535114809287267,
+          "answer_similarity": 0.19708633945616783,
+          "bbox": null
+        }
+      ],
+      "highlights": [
+        {
+          "doc_name": "resume_job.pdf",
+          "page": 1,
+          "text": "He contributed to the development of a web and mobile-based hostel management system at StaySync, a Hostel Management Startup.",
+          "score": 0.4294406635618891,
+          "char_start": null,
+          "char_end": null,
+          "bbox": null
+        },
+        {
+          "doc_name": "resume_job.pdf",
+          "page": 1,
+          "text": "Puli Bhavishwa Reddy has experience in both contributing to a startup and leading a project as an intern.",
+          "score": 0.41358308749136646,
+          "char_start": null,
+          "char_end": null,
+          "bbox": null
+        },
+        {
+          "doc_name": "resume_job.pdf",
+          "page": 1,
+          "text": "He designed scalable front-end architectures and integrated RESTful APIs for seamless cross-platform functionality.",
+          "score": 0.3797565555120436,
+          "char_start": null,
+          "char_end": null,
+          "bbox": null
+        },
+        {
+          "doc_name": "resume_job.pdf",
+          "page": 1,
+          "text": "His contribution improved operational transparency and reduced manual workload for students and administrators.",
+          "score": 0.28729563543043773,
+          "char_start": null,
+          "char_end": null,
+          "bbox": null
         }
       ]
     }
